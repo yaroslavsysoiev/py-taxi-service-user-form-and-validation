@@ -1,11 +1,34 @@
 from django import forms
-from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
-
 from .models import Driver, Car
 
 
-class DriverCreationForm(UserCreationForm):
+class LicenseNumberValidationMixin(forms.ModelForm):
+    def clean_license_number(self):
+        license_number = self.cleaned_data.get("license_number")
+
+        if len(license_number) != 8:
+            raise forms.ValidationError(
+                "License must consist of 8 characters."
+            )
+
+        first_three = license_number[:3]
+        last_five = license_number[3:]
+
+        if not first_three.isupper() or not first_three.isalpha():
+            raise forms.ValidationError(
+                "The first 3 characters must be uppercase letters."
+            )
+
+        if not last_five.isdigit():
+            raise forms.ValidationError(
+                "The last 5 characters must be digits."
+            )
+
+        return license_number
+
+
+class DriverCreationForm(UserCreationForm, LicenseNumberValidationMixin):
     class Meta(UserCreationForm.Meta):
         model = Driver
         fields = UserCreationForm.Meta.fields + (
@@ -14,57 +37,11 @@ class DriverCreationForm(UserCreationForm):
             "license_number",
         )
 
-    def clean_license_number(self):
-        license_number = self.cleaned_data["license_number"]
 
-        if len(license_number) != 8:
-            raise forms.ValidationError(
-                "License must consist of 8 characters."
-            )
-
-        first_three = license_number[:3]
-        last_five = license_number[3:]
-
-        if not first_three.isupper() or not first_three.isalpha():
-            raise forms.ValidationError(
-                "The first 3 characters must be uppercase letters."
-            )
-
-        if not last_five.isdigit():
-            raise forms.ValidationError(
-                "The last 5 characters must be digits."
-            )
-
-        return license_number
-
-
-class DriverLicenseUpdateForm(forms.ModelForm):
+class DriverLicenseUpdateForm(LicenseNumberValidationMixin):
     class Meta:
         model = Driver
         fields = ["license_number"]
-
-    def clean_license_number(self):
-        license_number = self.cleaned_data["license_number"]
-
-        if len(license_number) != 8:
-            raise forms.ValidationError(
-                "License must consist of 8 characters."
-            )
-
-        first_three = license_number[:3]
-        last_five = license_number[3:]
-
-        if not first_three.isupper() or not first_three.isalpha():
-            raise forms.ValidationError(
-                "The first 3 characters must be uppercase letters."
-            )
-
-        if not last_five.isdigit():
-            raise forms.ValidationError(
-                "The last 5 characters must be digits."
-            )
-
-        return license_number
 
 
 class CarForm(forms.ModelForm):
